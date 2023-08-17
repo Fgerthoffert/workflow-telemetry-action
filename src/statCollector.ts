@@ -9,10 +9,12 @@ import {
   LineGraphOptions,
   MemoryStats,
   NetworkStats,
+  DockerStats,
   ProcessedCPUStats,
   ProcessedDiskStats,
   ProcessedMemoryStats,
   ProcessedNetworkStats,
+  ProcessedDockerStats,
   ProcessedStats,
   StackedAreaGraphOptions,
   WorkflowJobType
@@ -52,6 +54,7 @@ async function reportWorkflowMetrics(): Promise<string> {
   const { activeMemoryX, availableMemoryX } = await getMemoryStats()
   const { networkReadX, networkWriteX } = await getNetworkStats()
   const { diskReadX, diskWriteX } = await getDiskStats()
+  const dockerStats = await getDockerStats()
 
   const cpuLoad =
     userLoadX && userLoadX.length && systemLoadX && systemLoadX.length
@@ -122,6 +125,34 @@ async function reportWorkflowMetrics(): Promise<string> {
         })
       : null
 
+  const dockerStatsCharts = []
+  for (const dockerContainer of dockerStats) {
+    if (dockerContainer.cpuStats && dockerContainer.cpuStats.length) {
+      const chart = await getLineGraph({
+        label: `CPU Usage (%) for container: ${dockerContainer.containerId}`,
+        axisColor,
+        line: {
+          label: 'CPU',
+          color: '#6c25be',
+          points: dockerContainer.cpuStats
+        }
+      })
+      dockerStatsCharts.push(chart)
+    }
+    if (dockerContainer.memStats && dockerContainer.memStats.length) {
+      const chart = await getLineGraph({
+        label: `MEM Usage (%) for container: ${dockerContainer.containerId}`,
+        axisColor,
+        line: {
+          label: 'MEM',
+          color: '#6c25be',
+          points: dockerContainer.memStats
+        }
+      })
+      dockerStatsCharts.push(chart)
+    }    
+  }
+
   const diskIORead =
     diskReadX && diskReadX.length
       ? await getLineGraph({
@@ -179,6 +210,13 @@ async function reportWorkflowMetrics(): Promise<string> {
     postContentItems.push(
       `| Disk I/O      | ![${diskIORead.id}](${diskIORead.url})              | ![${diskIOWrite.id}](${diskIOWrite.url})              |`
     )
+  }
+
+  if (dockerStatsCharts.length > 0) {
+    postContentItems.push('### Docker Stats')
+    for (const chart of dockerStatsCharts) {
+      postContentItems.push(`![${chart.id}](${chart.url})`)
+    }
   }
 
   return postContentItems.join('\n')
@@ -292,6 +330,44 @@ async function getDiskStats(): Promise<ProcessedDiskStats> {
   })
 
   return { diskReadX, diskWriteX }
+}
+
+async function getDockerStats(): Promise<ProcessedDockerStats[]> {
+  let containers: Array<{containerId: string, cpuStats: ProcessedStats[], memStats: ProcessedStats[]}> = []
+
+  logger.debug('Getting Docker stats ...')
+  const response = await axios.get(`http://localhost:${STAT_SERVER_PORT}/dockerstats`)
+  if (logger.isDebugEnabled()) {
+    logger.debug(`Got Docker stats: ${JSON.stringify(response.data)}`)
+  }
+
+  // Create an array of unique container ID
+  const uniqueContainers: Array<string>= []
+  for (const dataPoint of response.data) {
+    if (uniqueContainers.find((c) => c === dataPoint.containerId) === undefined) {
+      uniqueContainers.push(dataPoint.containerId)
+    }
+  }
+
+  // Create an array of containers with datapoints
+  for (const container of uniqueContainers) {
+    const containerDataPoints = response.data.filter((c: DockerStats) => container === c.containerId)
+    const cpuStats: ProcessedStats[] = []
+    const memStats: ProcessedStats[] = []
+    for (const dataPoint of containerDataPoints) {
+      cpuStats.push({
+        x: dataPoint.time,
+        y: dataPoint.cpuPercent
+      })
+      memStats.push({
+        x: dataPoint.time,
+        y: dataPoint.memPercent
+      })      
+    }
+    containers.push({containerId: container, cpuStats, memStats})
+  }
+  
+  return containers
 }
 
 async function getLineGraph(options: LineGraphOptions): Promise<GraphResponse> {

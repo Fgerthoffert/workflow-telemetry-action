@@ -1,7 +1,7 @@
 import { createServer, IncomingMessage, Server, ServerResponse } from 'http'
 import si from 'systeminformation'
 import * as logger from './logger'
-import { CPUStats, MemoryStats, DiskStats, NetworkStats } from './interfaces'
+import { CPUStats, MemoryStats, DiskStats, NetworkStats, DockerStats } from './interfaces'
 
 const STATS_FREQ: number =
   parseInt(process.env.WORKFLOW_TELEMETRY_STAT_FREQ || '') || 5000
@@ -128,6 +128,34 @@ function collectDiskStats(
 
 ///////////////////////////
 
+///////////////////////////
+
+// Docker Stats             //
+///////////////////////////
+
+const dockerStatsHistogram: DockerStats[] = []
+
+function collectDockertats(statTime: number, timeInterval: number): Promise<any> {
+  return si
+    .dockerContainerStats('*')
+    .then((data: si.Systeminformation.DockerContainerStatsData[]) => {
+      for (const containerData of data) {
+        const dockerStats: DockerStats = {
+          time: statTime,
+          containerId: containerData.id,
+          memPercent: containerData.memPercent,
+          cpuPercent: containerData.cpuPercent,
+        }
+        dockerStatsHistogram.push(dockerStats)
+      }
+    })
+    .catch((error: any) => {
+      logger.error(error)
+    })
+}
+
+///////////////////////////
+
 async function collectStats(triggeredFromScheduler: boolean = true) {
   try {
     const currentTime: number = Date.now()
@@ -143,7 +171,8 @@ async function collectStats(triggeredFromScheduler: boolean = true) {
     promises.push(collectMemoryStats(statCollectTime, timeInterval))
     promises.push(collectNetworkStats(statCollectTime, timeInterval))
     promises.push(collectDiskStats(statCollectTime, timeInterval))
-
+    promises.push(collectDockertats(statCollectTime, timeInterval))
+    
     return promises
   } finally {
     if (triggeredFromScheduler) {
@@ -194,6 +223,15 @@ function startHttpServer() {
             }
             break
           }
+          case '/dockerstats': {
+            if (request.method === 'GET') {
+              response.end(JSON.stringify(dockerStatsHistogram))
+            } else {
+              response.statusCode = 405
+              response.end()
+            }
+            break
+          }          
           case '/collect': {
             if (request.method === 'POST') {
               await collectStats(false)

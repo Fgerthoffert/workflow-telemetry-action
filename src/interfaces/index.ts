@@ -29,6 +29,13 @@ export interface DiskStats {
   readonly wxMb: number
 }
 
+export interface DockerStats {
+  readonly time: number
+  readonly containerId: string
+  readonly memPercent: number
+  readonly cpuPercent: number  
+}
+
 export interface ProcessedStats {
   readonly x: number
   readonly y: number
@@ -52,6 +59,12 @@ export interface ProcessedNetworkStats {
 export interface ProcessedDiskStats {
   readonly diskReadX: ProcessedStats[]
   readonly diskWriteX: ProcessedStats[]
+}
+
+export interface ProcessedDockerStats {
+  readonly containerId: string
+  readonly cpuStats: ProcessedStats[]
+  readonly memStats: ProcessedStats[]
 }
 
 export interface LineGraphOptions {
