@@ -137,23 +137,38 @@ const dockerStatsHistogram: DockerStats[] = []
 
 function collectDockertats(statTime: number, timeInterval: number): Promise<any> {
   return si
-    .dockerContainerStats('*')
-    .then((data: si.Systeminformation.DockerContainerStatsData[]) => {
-      logger.debug(`Collected docker stats: ${JSON.stringify(data)}`)
-
-      for (const containerData of data) {
-        const dockerStats: DockerStats = {
-          time: statTime,
-          containerId: containerData.id,
-          memPercent: containerData.memPercent,
-          cpuPercent: containerData.cpuPercent,
-        }
-        dockerStatsHistogram.push(dockerStats)
+    .fsStats()
+    .then((data: si.Systeminformation.FsStatsData) => {
+      const dockerStats: DockerStats = {
+        time: statTime,
+        containerId: 'abcd',
+        memPercent: 10,
+        cpuPercent: 10,
       }
+      dockerStatsHistogram.push(dockerStats)
     })
     .catch((error: any) => {
       logger.error(error)
-    })
+    })  
+
+  // return si
+  //   .dockerContainerStats('*')
+  //   .then((data: si.Systeminformation.DockerContainerStatsData[]) => {
+  //     logger.debug(`Collected docker stats: ${JSON.stringify(data)}`)
+
+  //     for (const containerData of data) {
+  //       const dockerStats: DockerStats = {
+  //         time: statTime,
+  //         containerId: containerData.id,
+  //         memPercent: containerData.memPercent,
+  //         cpuPercent: containerData.cpuPercent,
+  //       }
+  //       dockerStatsHistogram.push(dockerStats)
+  //     }
+  //   })
+  //   .catch((error: any) => {
+  //     logger.error(error)
+  //   })
 }
 
 ///////////////////////////

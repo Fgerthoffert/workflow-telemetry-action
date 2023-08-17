@@ -446,7 +446,7 @@ async function getStackedAreaGraph(
 ///////////////////////////
 
 export async function start(): Promise<boolean> {
-  logger.info(`Starting stat collector 1 ...`)
+  logger.info(`Starting stat collector 2 ...`)
 
   try {
     let metricFrequency = 0

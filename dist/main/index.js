@@ -22528,7 +22528,7 @@ function getStackedAreaGraph(options) {
 ///////////////////////////
 function start() {
     return __awaiter(this, void 0, void 0, function* () {
-        logger.info(`Starting stat collector 1 ...`);
+        logger.info(`Starting stat collector 2 ...`);
         try {
             let metricFrequency = 0;
             const metricFrequencyInput = core.getInput('metric_frequency');
