@@ -150,7 +150,7 @@ async function reportWorkflowMetrics(): Promise<string> {
         }
       })
       dockerStatsCharts.push(chart)
-    }    
+    }
   }
 
   const diskIORead =
@@ -333,25 +333,33 @@ async function getDiskStats(): Promise<ProcessedDiskStats> {
 }
 
 async function getDockerStats(): Promise<ProcessedDockerStats[]> {
-  let containers: Array<{containerId: string, cpuStats: ProcessedStats[], memStats: ProcessedStats[]}> = []
+  let containers: Array<{
+    containerId: string
+    cpuStats: ProcessedStats[]
+    memStats: ProcessedStats[]
+  }> = []
 
   logger.debug('Getting Docker stats ...')
-  const response = await axios.get(`http://localhost:${STAT_SERVER_PORT}/dockerstats`)
+  const response = await axios.get(
+    `http://localhost:${STAT_SERVER_PORT}/dockerstats`
+  )
   if (logger.isDebugEnabled()) {
     logger.debug(`Got Docker stats: ${JSON.stringify(response.data)}`)
   }
 
   // Create an array of unique container ID
-  const uniqueContainers: Array<string>= []
+  const uniqueContainers: Array<string> = []
   for (const dataPoint of response.data) {
-    if (uniqueContainers.find((c) => c === dataPoint.containerId) === undefined) {
+    if (uniqueContainers.find(c => c === dataPoint.containerId) === undefined) {
       uniqueContainers.push(dataPoint.containerId)
     }
   }
 
   // Create an array of containers with datapoints
   for (const container of uniqueContainers) {
-    const containerDataPoints = response.data.filter((c: DockerStats) => container === c.containerId)
+    const containerDataPoints = response.data.filter(
+      (c: DockerStats) => container === c.containerId
+    )
     const cpuStats: ProcessedStats[] = []
     const memStats: ProcessedStats[] = []
     for (const dataPoint of containerDataPoints) {
@@ -362,11 +370,11 @@ async function getDockerStats(): Promise<ProcessedDockerStats[]> {
       memStats.push({
         x: dataPoint.time,
         y: dataPoint.memPercent
-      })      
+      })
     }
-    containers.push({containerId: container, cpuStats, memStats})
+    containers.push({ containerId: container, cpuStats, memStats })
   }
-  
+
   return containers
 }
 
@@ -438,7 +446,7 @@ async function getStackedAreaGraph(
 ///////////////////////////
 
 export async function start(): Promise<boolean> {
-  logger.info(`Starting stat collector ...`)
+  logger.info(`Starting stat collector 1 ...`)
 
   try {
     let metricFrequency = 0

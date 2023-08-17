@@ -32208,7 +32208,7 @@ function getDockerStats() {
         // Create an array of unique container ID
         const uniqueContainers = [];
         for (const dataPoint of response.data) {
-            if (uniqueContainers.find((c) => c === dataPoint.containerId) === undefined) {
+            if (uniqueContainers.find(c => c === dataPoint.containerId) === undefined) {
                 uniqueContainers.push(dataPoint.containerId);
             }
         }
@@ -32293,7 +32293,7 @@ function getStackedAreaGraph(options) {
 ///////////////////////////
 function start() {
     return __awaiter(this, void 0, void 0, function* () {
-        logger.info(`Starting stat collector ...`);
+        logger.info(`Starting stat collector 1 ...`);
         try {
             let metricFrequency = 0;
             const metricFrequencyInput = core.getInput('metric_frequency');
