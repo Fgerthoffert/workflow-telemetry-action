@@ -139,6 +139,8 @@ function collectDockertats(statTime: number, timeInterval: number): Promise<any>
   return si
     .dockerContainerStats('*')
     .then((data: si.Systeminformation.DockerContainerStatsData[]) => {
+      logger.debug(`Collected docker stats: ${JSON.stringify(data)}`)
+
       for (const containerData of data) {
         const dockerStats: DockerStats = {
           time: statTime,
